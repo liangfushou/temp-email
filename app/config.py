@@ -38,8 +38,8 @@ class Settings(BaseSettings):
     # Custom Domains
     custom_domains: Optional[str] = None  # JSON array string
     default_domains: Optional[str] = None  # JSON array string
-    enable_custom_domains: bool = True  # 默認啟用自定義域名支持 (配合 Cloudflare KV 使用)
-    enable_builtin_domains: bool = True
+    enable_custom_domains: bool = True  # 默认启用自定义域名支持 (配合 Cloudflare KV 使用)
+    enable_builtin_domains: bool = False  # 默认禁用内置域名（可能被目标服务封锁）
 
     # Cloudflare Workers KV (Email Workers 整合)
     use_cloudflare_kv: bool = False  # 启用 Cloudflare KV 作为邮件来源
