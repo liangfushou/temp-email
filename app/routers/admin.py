@@ -4,7 +4,7 @@
 """
 
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional, List, Any
 from fastapi import APIRouter, HTTPException, Depends, Cookie, Query, status, Response, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -399,45 +399,59 @@ async def get_env_config(current_user: str = Depends(get_current_user)):
     """
     獲取完整的 .env 配置
     需要登入
+
+    優先級：
+    1. settings (已從環境變量/. env 文件加載)
+    2. .env 文件（僅用於檢查是否在文件中定義）
     """
 
     try:
-        # 從 .env 檔案讀取配置
+        # 從 .env 檔案讀取配置（僅用於參考）
         env_data = env_service.read_env()
 
-        # 組織配置為結構化格式
+        # Helper: 優先使用 settings（環境變量 + .env），如果為空則檢查 env_data
+        def get_config_value(env_key: str, settings_value: Any, default: str = "") -> str:
+            """
+            優先使用 settings 中的值（已從環境變量加載）
+            這樣 Docker 環境變量就能正確顯示
+            """
+            if settings_value is not None and str(settings_value).strip():
+                return str(settings_value) if not isinstance(settings_value, bool) else str(settings_value).lower()
+            return env_data.get(env_key, default)
+
+        # 組織配置為結構化格式（優先使用 settings，支持 Docker 環境變量）
         config = {
             "server": {
-                "port": env_data.get("PORT", str(settings.port)),
-                "host": env_data.get("HOST", settings.host),
-                "reload": env_data.get("RELOAD", str(settings.reload).lower()),
+                "port": get_config_value("PORT", settings.port, str(settings.port)),
+                "host": get_config_value("HOST", settings.host, settings.host),
+                "reload": get_config_value("RELOAD", settings.reload, str(settings.reload).lower()),
             },
             "domains": {
-                "custom_domains": env_data.get("CUSTOM_DOMAINS", settings.custom_domains or ""),
-                "default_domains": env_data.get("DEFAULT_DOMAINS", settings.default_domains or ""),
-                "enable_custom_domains": env_data.get("ENABLE_CUSTOM_DOMAINS", str(settings.enable_custom_domains).lower()),
-                "enable_builtin_domains": env_data.get("ENABLE_BUILTIN_DOMAINS", str(settings.enable_builtin_domains).lower()),
+                "custom_domains": get_config_value("CUSTOM_DOMAINS", settings.custom_domains, ""),
+                "default_domains": get_config_value("DEFAULT_DOMAINS", settings.default_domains, ""),
+                "enable_custom_domains": get_config_value("ENABLE_CUSTOM_DOMAINS", settings.enable_custom_domains),
+                "enable_builtin_domains": get_config_value("ENABLE_BUILTIN_DOMAINS", settings.enable_builtin_domains),
             },
             "cloudflare": {
-                "use_cloudflare_kv": env_data.get("USE_CLOUDFLARE_KV", str(settings.use_cloudflare_kv).lower()),
-                "cf_account_id": env_data.get("CF_ACCOUNT_ID", settings.cf_account_id),
-                "cf_kv_namespace_id": env_data.get("CF_KV_NAMESPACE_ID", settings.cf_kv_namespace_id),
-                "cf_api_token": env_data.get("CF_API_TOKEN", settings.cf_api_token),
+                "use_cloudflare_kv": get_config_value("USE_CLOUDFLARE_KV", settings.use_cloudflare_kv),
+                "cf_account_id": get_config_value("CF_ACCOUNT_ID", settings.cf_account_id, ""),
+                "cf_kv_namespace_id": get_config_value("CF_KV_NAMESPACE_ID", settings.cf_kv_namespace_id, ""),
+                "cf_api_token": get_config_value("CF_API_TOKEN", settings.cf_api_token, ""),
             },
             "llm": {
-                "use_llm_extraction": env_data.get("USE_LLM_EXTRACTION", str(settings.use_llm_extraction).lower()),
-                "openai_api_key": env_data.get("OPENAI_API_KEY", settings.openai_api_key),
-                "openai_api_base": env_data.get("OPENAI_API_BASE", settings.openai_api_base or ""),
-                "openai_model": env_data.get("OPENAI_MODEL", settings.openai_model),
-                "default_code_extraction_method": env_data.get("DEFAULT_CODE_EXTRACTION_METHOD", settings.default_code_extraction_method),
+                "use_llm_extraction": get_config_value("USE_LLM_EXTRACTION", settings.use_llm_extraction),
+                "openai_api_key": get_config_value("OPENAI_API_KEY", settings.openai_api_key, ""),
+                "openai_api_base": get_config_value("OPENAI_API_BASE", settings.openai_api_base, ""),
+                "openai_model": get_config_value("OPENAI_MODEL", settings.openai_model, settings.openai_model),
+                "default_code_extraction_method": get_config_value("DEFAULT_CODE_EXTRACTION_METHOD", settings.default_code_extraction_method, settings.default_code_extraction_method),
             },
             "admin": {
-                "admin_username": env_data.get("ADMIN_USERNAME", settings.admin_username),
-                "admin_password": env_data.get("ADMIN_PASSWORD", "******"),  # 隱藏密碼
-                "admin_secret_key": env_data.get("ADMIN_SECRET_KEY", "******"),  # 隱藏密鑰
+                "admin_username": get_config_value("ADMIN_USERNAME", settings.admin_username, settings.admin_username),
+                "admin_password": "******",  # 隱藏密碼（安全）
+                "admin_secret_key": "******",  # 隱藏密鑰（安全）
             },
             "cors": {
-                "cors_origins": env_data.get("CORS_ORIGINS", str(settings.cors_origins)),
+                "cors_origins": get_config_value("CORS_ORIGINS", settings.cors_origins, str(settings.cors_origins)),
             },
         }
 
