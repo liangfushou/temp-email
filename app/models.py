@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 # 验证码模型
 class Code(BaseModel):
     code: str
-    type: Literal["numeric", "alphanumeric", "token"]
+    type: Literal["numeric", "alphanumeric", "token", "verification_link"]
     length: int
     pattern: str
     confidence: float = Field(ge=0.0, le=1.0)

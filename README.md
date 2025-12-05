@@ -1,13 +1,13 @@
 # Cloudflare 临时邮箱服务 (Temporary Email Service)
 
-**🌐 语言 / Language**: [简体中文](README.md) | [English](README.en.md)
-
 ![GitHub stars](https://img.shields.io/github/stars/TonnyWong1052/temp-email?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/TonnyWong1052/temp-email?style=social)
 ![GitHub license](https://img.shields.io/github/license/TonnyWong1052/temp-email)
 ![GitHub issues](https://img.shields.io/github/issues/TonnyWong1052/temp-email)
 
 自动生成临时邮箱并接收验证码的服务
+
+**🌐 语言 / Language**: [简体中文](README.md) | [English](README.en.md)
 
 **🌐 在线演示**: [https://www.ogo.codes](https://www.ogo.codes)
 

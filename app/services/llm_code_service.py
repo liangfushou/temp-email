@@ -316,7 +316,7 @@ class LLMCodeService:
 
     def _build_prompt(self, text: str) -> str:
         """構建 LLM 提示詞（限定只返回最有把握的一個）"""
-        return f"""You are an expert at extracting verification codes from emails. Analyze the following email and extract ONLY the SINGLE MOST LIKELY verification code (OTP/PIN/token). Do not list multiple results.
+        return f"""You are an expert at extracting verification codes AND verification links from emails. Analyze the following email and extract ONLY the SINGLE MOST LIKELY verification code OR verification link. Do not list multiple results.
 
 EMAIL CONTENT:
 ---
@@ -339,10 +339,18 @@ SELECTION RULES (choose 1 best):
    - Often in URLs or after "token:" keyword
    - Only choose if context explicitly indicates it's the verification code
 
+4. **Verification Links**: Direct confirmation/verification URLs (IMPORTANT!)
+   - URLs containing keywords in path: "verify", "confirm", "activate", "validate", "auth", "signup", "register"
+   - URLs with token/code/key parameters: ?token=xxx, ?code=yyy, ?key=zzz, &verify=
+   - Often appear after text like "Click here", "Verify your email", "Confirm your account"
+   - Return the FULL URL including all query parameters
+   - Confidence: 0.90-0.95 for explicit verification URLs
+   - EXCLUDE these URLs: unsubscribe, privacy, terms, policy, tracking, pixel, .gif, .png, .jpg, .css, .js
+
 CONFIDENCE SCORING (for the single choice):
-- 0.95-1.0: Code with explicit keywords (e.g., "Your code is 123456", "驗證碼：123456")
+- 0.95-1.0: Code/Link with explicit keywords (e.g., "Your code is 123456", "Click to verify: https://...")
 - 0.85-0.94: Code in URL parameters (e.g., ?code=ABC123, &token=xyz)
-- 0.80-0.84: Standalone numbers/codes in appropriate context (e.g., email body with verification theme)
+- 0.80-0.84: Standalone numbers/codes/links in appropriate context
 - 0.70-0.79: Ambiguous matches that could be codes
 
 AVOID EXTRACTING:
@@ -351,12 +359,17 @@ AVOID EXTRACTING:
 - Prices or quantities
 - Regular English words (e.g., "below", "Hello", "within")
 - Dates or times
+- Unsubscribe links
+- Privacy policy or terms links
+- Image/tracking pixel URLs
 
 OUTPUT CONSTRAINTS:
 - Return a JSON array with at most 1 item (0 or 1).
 - No markdown or explanations.
 
-SINGLE-ITEM JSON EXAMPLE:
+SINGLE-ITEM JSON EXAMPLES:
+
+For verification code:
 [
   {{
     "code": "123456",
@@ -367,7 +380,18 @@ SINGLE-ITEM JSON EXAMPLE:
   }}
 ]
 
-If no verification codes found or uncertain, return: []
+For verification link:
+[
+  {{
+    "code": "https://example.com/verify?token=abc123xyz",
+    "type": "verification_link",
+    "length": 42,
+    "confidence": 0.92,
+    "context": "Click here to verify your email"
+  }}
+]
+
+If no verification codes or links found, return: []
 
 JSON Response:"""
 
@@ -404,7 +428,7 @@ JSON Response:"""
                 seen.add(raw_code)
 
                 code_type = item.get('type', 'alphanumeric')
-                if code_type not in ['numeric', 'alphanumeric', 'token']:
+                if code_type not in ['numeric', 'alphanumeric', 'token', 'verification_link']:
                     code_type = 'alphanumeric'
 
                 confidence = float(item.get('confidence', 0.8))
@@ -421,14 +445,16 @@ JSON Response:"""
             if not candidates:
                 return []
 
-            # 排序規則：信心值優先，其次偏好數字碼（長度 4-8，特別是 6 位）
+            # 排序規則：信心值優先，其次偏好數字碼（長度 4-8，特別是 6 位），驗證連結也有較高優先級
             def rank_key(c: Code):
                 is_numeric = (c.type == 'numeric') and c.code.isdigit()
+                is_verification_link = (c.type == 'verification_link')
                 is_len6 = (c.length == 6)
                 is_len_4_8 = 4 <= c.length <= 8
                 return (
                     -c.confidence,           # 高信心優先
                     -(1 if is_numeric else 0),
+                    -(1 if is_verification_link else 0),  # 驗證連結優先
                     -(1 if is_len6 else 0),
                     -(1 if is_len_4_8 else 0)
                 )

@@ -1,13 +1,13 @@
 # Cloudflare Temporary Email Service
 
-**🌐 Language / 语言**: [简体中文](README.md) | [English](README.en.md)
-
 ![GitHub stars](https://img.shields.io/github/stars/TonnyWong1052/temp-email?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/TonnyWong1052/temp-email?style=social)
 ![GitHub license](https://img.shields.io/github/license/TonnyWong1052/temp-email)
 ![GitHub issues](https://img.shields.io/github/issues/TonnyWong1052/temp-email)
 
 Automatically generate temporary email addresses and receive verification codes
+
+**🌐 语言 / Language**: [简体中文](README.md) | [English](README.en.md)
 
 **🌐 Live Demo**: [https://www.ogo.codes](https://www.ogo.codes)
 
