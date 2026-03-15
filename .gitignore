@@ -74,6 +74,7 @@ workers/node_modules/
 workers/.wrangler/
 workers/wrangler.toml.backup
 .cloudflare_config
+.wrangler-home/
 
 # Backup Files
 *.backup

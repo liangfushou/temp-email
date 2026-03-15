@@ -206,6 +206,22 @@ class CloudflareHelper:
                             "icon": "✅"
                         }
 
+                # 某些 Token 无法通过 user/tokens/verify，但仍可正常访问账户级 API。
+                fallback_response = await client.get(
+                    "https://api.cloudflare.com/client/v4/accounts",
+                    headers=headers,
+                    params={"per_page": 1}
+                )
+                if fallback_response.status_code == 200:
+                    fallback_data = fallback_response.json()
+                    if fallback_data.get("success"):
+                        return {
+                            "name": "API Token 验证",
+                            "status": "passed",
+                            "message": "Token 可访问 Cloudflare 账户 API（已通过账户接口验证）",
+                            "icon": "✅"
+                        }
+
                 return {
                     "name": "API Token 验证",
                     "status": "failed",

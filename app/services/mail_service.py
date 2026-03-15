@@ -1,7 +1,7 @@
 import asyncio
 import time
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Tuple
 import httpx
 import ftfy
@@ -561,9 +561,13 @@ class MailService:
 
         while (asyncio.get_event_loop().time() - start_time) < timeout_seconds:
             mails = await self.fetch_mails(email)
+            normalized_since_date = self._normalize_datetime(since_date)
 
             # 过滤出新邮件
-            new_mails = [m for m in mails if m.received_at > since_date]
+            new_mails = [
+                m for m in mails
+                if self._normalize_datetime(m.received_at) > normalized_since_date
+            ]
 
             if new_mails:
                 return new_mails
@@ -662,24 +666,30 @@ class MailService:
             if isinstance(v, (int, float)):
                 ts = float(v)
                 ts = ts / 1000.0 if ts > 1e11 else ts
-                return datetime.fromtimestamp(ts)
+                return datetime.fromtimestamp(ts, tz=timezone.utc)
             if isinstance(v, str):
                 s = v.strip()
                 if s.endswith("Z"):
                     s = s.replace("Z", "+00:00")
                 try:
-                    return datetime.fromisoformat(s)
+                    return self._normalize_datetime(datetime.fromisoformat(s))
                 except Exception:
                     pass
                 try:
                     dt = parsedate_to_datetime(v)
                     if dt:
-                        return dt
+                        return self._normalize_datetime(dt)
                 except Exception:
                     pass
         except Exception:
             pass
-        return datetime.now()
+        return datetime.now(timezone.utc)
+
+    def _normalize_datetime(self, value: datetime) -> datetime:
+        """Normalize datetimes to timezone-aware UTC values for safe comparisons."""
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
 
     def _generate_stable_mail_id(
         self, to: str, from_addr: str, subject: str, received_at: datetime, content_preview: str = ""

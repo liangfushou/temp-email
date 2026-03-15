@@ -2,7 +2,7 @@ import secrets
 import re
 from datetime import datetime, timedelta
 from typing import Optional
-from app.config import get_active_domains, get_default_domain, parse_domain_list, settings
+from app.config import get_active_domains, get_default_domain, get_kv_domains, parse_domain_list, settings
 from app.models import Email
 
 
@@ -59,12 +59,50 @@ class EmailService:
 
     def _select_random_domain(self) -> str:
         """
-        隨機選擇一個域名（所有域名均等機率）
+        選擇一個適合生成郵箱的域名
 
-        從所有可用域名中真正隨機選擇，確保每個域名都有相等的選擇機率
+        選擇優先級：
+        1. DEFAULT_DOMAINS 中顯式指定的域名
+        2. Cloudflare / 自定義域名
+        3. 所有可用域名
         """
-        active_domains = get_active_domains()
+        preferred_domains = self._get_preferred_domains()
+        active_domains = preferred_domains or get_active_domains()
         return secrets.choice(active_domains)
+
+    def _get_preferred_domains(self) -> list[str]:
+        """獲取優先用於生成郵箱的域名列表。"""
+        active_domains = get_active_domains()
+        if not active_domains:
+            return []
+
+        active_domain_map = {domain.lower(): domain for domain in active_domains}
+
+        # 顯式配置的默認域名優先
+        default_domains = parse_domain_list(settings.default_domains) if settings.default_domains else []
+        preferred_defaults = [
+            active_domain_map[domain.lower()]
+            for domain in default_domains
+            if domain.lower() in active_domain_map
+        ]
+        if preferred_defaults:
+            return preferred_defaults
+
+        # 啟用 Cloudflare KV 時，默認優先使用 Cloudflare / 自定義域名
+        if settings.use_cloudflare_kv:
+            kv_domains = get_kv_domains()
+            if not kv_domains and settings.enable_custom_domains and settings.custom_domains:
+                kv_domains = [d.lower() for d in parse_domain_list(settings.custom_domains)]
+
+            kv_domain_set = set(kv_domains)
+            preferred_kv_domains = [
+                domain for domain in active_domains
+                if domain.lower() in kv_domain_set
+            ]
+            if preferred_kv_domains:
+                return preferred_kv_domains
+
+        return []
 
     def validate_domain(self, domain: str) -> bool:
         """

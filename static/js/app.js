@@ -470,6 +470,7 @@ async function loadAvailableDomains() {
 
         if (data.success && data.data.domains) {
             const domains = data.data.domains;
+            const defaultDomain = data.data.info?.default_domain;
 
             // Clear existing options (except the first "random" option)
             domainSelect.innerHTML = `<option value="">${safeT('common_labels.random_domain')}</option>`;
@@ -488,6 +489,13 @@ async function loadAvailableDomains() {
 
                 domainSelect.appendChild(option);
             });
+
+            // If backend recommends a default domain, preselect it.
+            if (defaultDomain && domains.includes(defaultDomain)) {
+                domainSelect.value = defaultDomain;
+            } else if (domains.length === 1) {
+                domainSelect.value = domains[0];
+            }
         }
     } catch (error) {
         console.error('Failed to load domains:', error);
@@ -985,23 +993,37 @@ function fallbackCopyEmail(email) {
 }
 
 // Delete Email
-function deleteEmail(token) {
+async function deleteEmail(token) {
     if (!confirm(safeT('messages.confirm_delete'))) return;
 
-    // Clear expires interval
-    if (emailsState.expiresIntervals[token]) {
-        clearInterval(emailsState.expiresIntervals[token]);
-        delete emailsState.expiresIntervals[token];
+    try {
+        const response = await fetch(`${API_BASE}/api/email/${token}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.detail || data.message || safeT('errors.network_error'));
+        }
+
+        // Clear expires interval
+        if (emailsState.expiresIntervals[token]) {
+            clearInterval(emailsState.expiresIntervals[token]);
+            delete emailsState.expiresIntervals[token];
+        }
+
+        // Remove from state
+        emailsState.emails = emailsState.emails.filter(e => e.token !== token);
+
+        // Re-render
+        renderEmailList();
+        updateStats();
+
+        showToast(safeT('messages.email_deleted'), 'success');
+    } catch (error) {
+        console.error('Failed to delete email:', error);
+        showToast(error.message || safeT('errors.network_error'), 'error');
     }
-
-    // Remove from state
-    emailsState.emails = emailsState.emails.filter(e => e.token !== token);
-
-    // Re-render
-    renderEmailList();
-    updateStats();
-
-    showToast(safeT('messages.email_deleted'), 'success');
 }
 
 // View Mode State (HTML or Text)

@@ -66,6 +66,13 @@ class CodeResponse(BaseModel):
     data: dict
 
 
+class BatchDeleteEmailsRequest(BaseModel):
+    """批量刪除郵箱請求"""
+    tokens: Optional[List[str]] = None
+    domain: Optional[str] = None
+    delete_all: bool = False
+
+
 # 健康检查响应
 class HealthResponse(BaseModel):
     success: bool

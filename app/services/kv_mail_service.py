@@ -9,6 +9,7 @@ import time
 import traceback
 from datetime import datetime
 from typing import List, Optional, Dict, Any
+from urllib.parse import quote
 import httpx
 
 from app.config import settings
@@ -292,7 +293,7 @@ class CloudflareKVClient:
             值（JSON 對象）或 None
         """
         try:
-            url = f"{self.base_url}/values/{key}"
+            url = self._build_value_url(key)
 
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(url, headers=self.headers)
@@ -322,6 +323,173 @@ class CloudflareKVClient:
                 }
             )
             return None
+
+    def _build_value_url(self, key: str) -> str:
+        """構建單個 KV value API URL，避免特殊字符導致路徑解析問題。"""
+        return f"{self.base_url}/values/{quote(key, safe='')}"
+
+    async def _delete_kv_key(self, key: str) -> Dict[str, Any]:
+        """
+        刪除單個 KV key。
+
+        Returns:
+            包含 status/success/status_code 的結果字典
+        """
+        try:
+            url = self._build_value_url(key)
+
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.delete(url, headers=self.headers)
+
+            if response.status_code in (200, 204):
+                return {"success": True, "status": "deleted", "status_code": response.status_code}
+
+            if response.status_code == 404:
+                return {"success": True, "status": "not_found", "status_code": response.status_code}
+
+            return {
+                "success": False,
+                "status": "error",
+                "status_code": response.status_code,
+                "response": response.text[:500],
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "status": "error",
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+            }
+
+    async def delete_email_data(self, email: str) -> Dict[str, Any]:
+        """
+        刪除指定郵箱在 Cloudflare KV 中的索引與郵件正文。
+
+        Args:
+            email: 郵箱地址
+
+        Returns:
+            刪除結果統計
+        """
+        start_time = time.time()
+        index_key = f"index:{email}"
+        used_prefix_fallback = False
+        mail_keys: List[str] = []
+        deleted_keys: List[str] = []
+        missing_keys: List[str] = []
+        errors: List[Dict[str, Any]] = []
+
+        try:
+            await log_service.log(
+                level=LogLevel.INFO,
+                log_type=LogType.KV_ACCESS,
+                message=f"Deleting mailbox data from KV: {email}",
+                details={"email": email, "operation": "delete_email_data"},
+            )
+
+            index_data = mail_index_cache.get(index_key)
+            if not index_data:
+                index_data = await self._get_kv_value(index_key)
+
+            if index_data:
+                for mail_info in index_data.get("mails", []):
+                    mail_key = mail_info.get("key")
+                    if mail_key and mail_key not in mail_keys:
+                        mail_keys.append(mail_key)
+
+            if not mail_keys:
+                used_prefix_fallback = True
+                # 每個郵箱最多保留 50 封，額外留出餘量以兼容舊數據。
+                prefix_limit = max(getattr(settings, "max_mails_per_email", 50) * 2, 100)
+                mail_keys = await self._list_keys(f"mail:{email}:", limit=prefix_limit)
+
+            keys_to_delete = [index_key, *mail_keys]
+
+            for key in keys_to_delete:
+                delete_result = await self._delete_kv_key(key)
+                if delete_result["success"]:
+                    if delete_result["status"] == "deleted":
+                        deleted_keys.append(key)
+                    else:
+                        missing_keys.append(key)
+                else:
+                    errors.append({"key": key, **delete_result})
+
+            mail_index_cache.delete(index_key)
+            for mail_key in mail_keys:
+                mail_content_cache.delete(mail_key)
+
+            success = len(errors) == 0
+            duration_ms = (time.time() - start_time) * 1000
+            log_level = LogLevel.SUCCESS if success else LogLevel.ERROR
+
+            await log_service.log(
+                level=log_level,
+                log_type=LogType.KV_ACCESS,
+                message=(
+                    f"KV mailbox deletion {'completed' if success else 'partially failed'}: {email}"
+                ),
+                details={
+                    "email": email,
+                    "deleted_keys": len(deleted_keys),
+                    "missing_keys": len(missing_keys),
+                    "mail_keys_detected": len(mail_keys),
+                    "used_prefix_fallback": used_prefix_fallback,
+                    "errors": errors,
+                },
+                duration_ms=duration_ms,
+            )
+
+            return {
+                "success": success,
+                "email": email,
+                "deletedKeys": deleted_keys,
+                "deletedCount": len(deleted_keys),
+                "deletedMailCount": len([key for key in deleted_keys if key.startswith("mail:")]),
+                "deletedIndex": index_key in deleted_keys,
+                "missingKeys": missing_keys,
+                "missingCount": len(missing_keys),
+                "usedPrefixFallback": used_prefix_fallback,
+                "errors": errors,
+            }
+
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            error_result = {
+                "success": False,
+                "email": email,
+                "deletedKeys": deleted_keys,
+                "deletedCount": len(deleted_keys),
+                "deletedMailCount": len([key for key in deleted_keys if key.startswith("mail:")]),
+                "deletedIndex": index_key in deleted_keys,
+                "missingKeys": missing_keys,
+                "missingCount": len(missing_keys),
+                "usedPrefixFallback": used_prefix_fallback,
+                "errors": [
+                    *errors,
+                    {
+                        "error_type": type(e).__name__,
+                        "error_message": str(e),
+                        "traceback": traceback.format_exc(),
+                    },
+                ],
+            }
+
+            await log_service.log(
+                level=LogLevel.ERROR,
+                log_type=LogType.KV_ACCESS,
+                message=f"Failed to delete mailbox data from KV: {str(e)}",
+                details={
+                    "email": email,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "traceback": traceback.format_exc(),
+                },
+                duration_ms=duration_ms,
+            )
+
+            return error_result
 
     async def _list_keys(self, prefix: str, limit: int = 20) -> List[str]:
         """

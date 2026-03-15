@@ -1,15 +1,161 @@
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query
-from app.models import EmailGenerateResponse, MailListResponse, CodeResponse
+from app.models import (
+    EmailGenerateResponse,
+    MailListResponse,
+    CodeResponse,
+    BatchDeleteEmailsRequest,
+)
 from app.services.email_service import email_service
 from app.services.mail_service import mail_service
 from app.services.storage_service import storage_service
 from app.services.html_sanitizer import html_sanitizer
 from app.services.text_to_html_service import text_to_html_service
+from app.services.cache_manager import cache_manager
+from app.services.redis_client import redis_client
 from app.config import settings, should_use_cloudflare_kv
 
 router = APIRouter(prefix="/api/email", tags=["Email"])
+
+
+def _parse_since_datetime(since: Optional[str]) -> datetime:
+    """Parse the optional since query into a timezone-aware UTC datetime."""
+    if not since:
+        return datetime.now(timezone.utc)
+
+    normalized = since.strip()
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+
+    parsed = datetime.fromisoformat(normalized)
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _serialize_active_email(email) -> Dict[str, Any]:
+    """格式化活躍郵箱輸出。"""
+    now = datetime.now()
+    ttl_seconds = max(int((email.expires_at - now).total_seconds()), 0)
+
+    return {
+        "token": email.token,
+        "email": email.address,
+        "address": email.address,
+        "prefix": email.prefix,
+        "domain": email.domain,
+        "createdAt": email.created_at.isoformat(),
+        "expiresAt": email.expires_at.isoformat(),
+        "ttlSeconds": ttl_seconds,
+        "mailCount": email.mail_count,
+        "useCloudflareKV": should_use_cloudflare_kv(email.address),
+    }
+
+
+async def _cleanup_redis_email_data(email_address: str, token: str) -> Dict[str, Any]:
+    """清理 Redis 緩存與兼容舊版的郵箱相關鍵。"""
+    result = {
+        "enabled": redis_client.is_enabled,
+        "success": True,
+        "cacheInvalidated": False,
+        "legacyKeysDeleted": [],
+        "legacyKeyCount": 0,
+        "errors": [],
+    }
+
+    if not redis_client.is_enabled:
+        result.update({"skipped": True, "reason": "redis_disabled"})
+        return result
+
+    try:
+        cache_invalidated = await cache_manager.invalidate_cache(email_address)
+        result["cacheInvalidated"] = cache_invalidated
+        if not cache_invalidated:
+            result["success"] = False
+            result["errors"].append("failed_to_invalidate_mail_cache")
+
+        legacy_keys = [
+            f"email:{token}",
+            f"addr:{email_address}",
+            f"mails:{token}",
+        ]
+
+        existing_legacy_keys: List[str] = []
+        for key in legacy_keys:
+            if await redis_client.exists(key):
+                existing_legacy_keys.append(key)
+
+        if existing_legacy_keys:
+            deleted_count = await redis_client.delete(*existing_legacy_keys)
+            result["legacyKeysDeleted"] = existing_legacy_keys
+            result["legacyKeyCount"] = deleted_count
+
+            if deleted_count < len(existing_legacy_keys):
+                result["success"] = False
+                result["errors"].append("legacy_keys_partially_deleted")
+
+        return result
+
+    except Exception as e:
+        result["success"] = False
+        result["errors"].append(f"{type(e).__name__}: {e}")
+        return result
+
+
+async def _delete_email_with_cleanup(email) -> Dict[str, Any]:
+    """刪除單個郵箱並清理 Cloudflare / Redis / 本地存儲。"""
+    cleanup: Dict[str, Any] = {}
+
+    if should_use_cloudflare_kv(email.address):
+        from app.services.kv_mail_service import kv_client
+
+        cleanup["cloudflare"] = await kv_client.delete_email_data(email.address)
+    else:
+        cleanup["cloudflare"] = {
+            "success": True,
+            "skipped": True,
+            "reason": "domain_not_using_cloudflare_kv",
+            "email": email.address,
+        }
+
+    cleanup["redis"] = await _cleanup_redis_email_data(email.address, email.token)
+
+    cloudflare_ok = cleanup["cloudflare"].get("success", False)
+    redis_ok = cleanup["redis"].get("success", False)
+
+    if not cloudflare_ok:
+        return {
+            "success": False,
+            "message": "Cloudflare KV 清理失败，邮箱未从本地移除，请修复后重试删除。",
+            "token": email.token,
+            "email": email.address,
+            "cleanup": cleanup,
+        }
+
+    storage_deleted = storage_service.delete_email(email.token)
+    cleanup["storage"] = {"success": storage_deleted}
+
+    if not storage_deleted:
+        return {
+            "success": False,
+            "message": "本地邮箱删除失败，请重试。",
+            "token": email.token,
+            "email": email.address,
+            "cleanup": cleanup,
+        }
+
+    message = "邮箱删除成功"
+    if not redis_ok:
+        message = "邮箱已删除，但 Redis 清理存在部分失败"
+
+    return {
+        "success": True,
+        "message": message,
+        "token": email.token,
+        "email": email.address,
+        "cleanup": cleanup,
+    }
 
 
 @router.api_route("/generate", methods=["POST", "GET"], response_model=EmailGenerateResponse)
@@ -47,6 +193,109 @@ async def generate_email(
             status_code=400,
             detail=f"无效的域名: {str(e)}. 使用 /api/domains 获取可用域名列表。",
         )
+
+
+@router.get("/active")
+async def get_active_emails():
+    """
+    查詢當前進程內的活躍郵箱列表
+
+    注意：
+    - 目前來源為應用內存存儲
+    - 服務重啟後，舊 token 不會從內存恢復
+    """
+    emails = sorted(
+        storage_service.get_all_emails(),
+        key=lambda item: item.created_at,
+        reverse=True,
+    )
+
+    return {
+        "success": True,
+        "data": {
+            "source": "memory",
+            "total": len(emails),
+            "emails": [_serialize_active_email(email) for email in emails],
+        },
+    }
+
+
+@router.post("/batch-delete")
+async def batch_delete_emails(request: BatchDeleteEmailsRequest):
+    """
+    批量刪除郵箱
+
+    支持三種選擇方式，可單獨使用或組合使用：
+    - `tokens`: 按 token 列表刪除
+    - `domain`: 按域名刪除當前活躍郵箱
+    - `delete_all`: 刪除當前全部活躍郵箱
+    """
+    requested_tokens = request.tokens or []
+    normalized_tokens = [token.strip() for token in requested_tokens if token and token.strip()]
+    domain = request.domain.strip().lower() if request.domain and request.domain.strip() else None
+    delete_all = bool(request.delete_all)
+
+    if not normalized_tokens and not domain and not delete_all:
+        raise HTTPException(
+            status_code=400,
+            detail="必须提供 tokens、domain 或 delete_all=true 中的至少一种条件。",
+        )
+
+    selected_emails: Dict[str, Any] = {}
+    all_active_emails = storage_service.get_all_emails()
+
+    if delete_all or domain:
+        for email in all_active_emails:
+            if delete_all or email.domain.lower() == domain:
+                selected_emails[email.token] = email
+
+    not_found_tokens: List[str] = []
+    for token in normalized_tokens:
+        if token in selected_emails:
+            continue
+
+        email = storage_service.get_email_by_token(token)
+        if email:
+            selected_emails[email.token] = email
+        else:
+            not_found_tokens.append(token)
+
+    matched_emails = list(selected_emails.values())
+    results: List[Dict[str, Any]] = []
+    deleted_count = 0
+    failed_count = 0
+
+    for email in matched_emails:
+        result = await _delete_email_with_cleanup(email)
+        results.append(result)
+        if result["success"]:
+            deleted_count += 1
+        else:
+            failed_count += 1
+
+    message = "批量删除完成"
+    if failed_count > 0:
+        message = "批量删除完成，但存在部分失败"
+    elif deleted_count == 0:
+        message = "没有匹配到可删除的邮箱"
+
+    return {
+        "success": failed_count == 0,
+        "message": message,
+        "data": {
+            "selectors": {
+                "tokens": normalized_tokens,
+                "domain": domain,
+                "deleteAll": delete_all,
+            },
+            "requestedTokenCount": len(normalized_tokens),
+            "matchedCount": len(matched_emails),
+            "deletedCount": deleted_count,
+            "failedCount": failed_count,
+            "notFoundTokens": not_found_tokens,
+            "results": results,
+        },
+    }
 
 
 @router.get("/{token}/mails", response_model=MailListResponse)
@@ -388,7 +637,7 @@ async def wait_for_new_mail(
     if not email:
         raise HTTPException(status_code=404, detail="邮箱未找到")
 
-    since_date = datetime.fromisoformat(since) if since else datetime.now()
+    since_date = _parse_since_datetime(since)
 
     # 根據 auto_extract_code 參數選擇是否自動提取
     if auto_extract_code:
@@ -499,7 +748,7 @@ async def wait_for_code(
     if not email:
         raise HTTPException(status_code=404, detail="邮箱未找到")
 
-    since_date = datetime.fromisoformat(since) if since else datetime.now()
+    since_date = _parse_since_datetime(since)
 
     # 使用增強版本等待新郵件並提取驗證碼
     new_mails, extraction_stats = await mail_service.wait_for_new_mail_with_codes(
@@ -549,8 +798,18 @@ async def delete_email(token: str):
 
     - **token**: 邮箱token
     """
-    success = storage_service.delete_email(token)
-    if not success:
+    email = storage_service.get_email_by_token(token)
+    if not email:
         raise HTTPException(status_code=404, detail="邮箱未找到")
 
-    return {"success": True, "message": "邮箱删除成功"}
+    result = await _delete_email_with_cleanup(email)
+
+    return {
+        "success": result["success"],
+        "message": result["message"],
+        "data": {
+            "token": result["token"],
+            "email": result["email"],
+            "cleanup": result["cleanup"],
+        },
+    }
