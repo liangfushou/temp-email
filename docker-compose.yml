@@ -39,6 +39,7 @@ services:
       - HOST=0.0.0.0
       - RELOAD=false
       - EMAIL_TTL=${EMAIL_TTL:-3600}
+      - MAIL_CHECK_INTERVAL=${MAIL_CHECK_INTERVAL:-3}
 
       # Redis 配置（高流量支持）
       - REDIS_URL=redis://redis:6379/0
