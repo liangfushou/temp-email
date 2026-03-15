@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # Email
     email_api_url: str = "https://mail.chatgpt.org.uk/api/get-emails"
     email_ttl: int = 3600
-    mail_check_interval: int = 10  # 优化：从 5 秒增加到 10 秒，减少轮询频率
+    mail_check_interval: int = 3  # 默认 3 秒轮询，更适合 OTP 场景与小并发
     max_mails_per_email: int = 50
     # External inbox compatibility & diagnostics
     email_compat_mode: Optional[str] = None  # "enhanced" for strict parsing, "reliable" for retry mechanism

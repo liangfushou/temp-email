@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from app.models import (
@@ -22,7 +22,10 @@ router = APIRouter(prefix="/api/email", tags=["Email"])
 def _parse_since_datetime(since: Optional[str]) -> datetime:
     """Parse the optional since query into a timezone-aware UTC datetime."""
     if not since:
-        return datetime.now(timezone.utc)
+        # Email headers are often only precise to the second.
+        # A tiny lookback avoids missing messages that arrive in the same second
+        # as the wait request starts.
+        return datetime.now(timezone.utc) - timedelta(seconds=2)
 
     normalized = since.strip()
     if normalized.endswith("Z"):
@@ -561,6 +564,11 @@ async def get_codes(
     email = storage_service.get_email_by_token(token)
     if not email:
         raise HTTPException(status_code=404, detail="邮箱未找到")
+
+    # 回退查碼時先主動刷新郵件，避免僅從內存讀到舊驗證碼。
+    fresh_mails = await mail_service.fetch_mails(email.address)
+    if fresh_mails:
+        storage_service.save_mails(token, fresh_mails)
 
     if mail_id:
         # 从指定邮件提取

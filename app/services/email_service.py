@@ -9,6 +9,16 @@ from app.models import Email
 class EmailService:
     """郵箱生成服務"""
 
+    def _get_email_ttl_seconds(self) -> int:
+        """獲取郵箱有效期（秒），配置異常時回退到 3600 秒。"""
+        try:
+            ttl_seconds = int(getattr(settings, "email_ttl", 3600))
+            if ttl_seconds > 0:
+                return ttl_seconds
+        except (TypeError, ValueError):
+            pass
+        return 3600
+
     def generate_email(self, prefix: str = None, domain: str = None) -> Email:
         """
         生成隨機郵箱
@@ -37,7 +47,7 @@ class EmailService:
         address = f"{email_prefix}@{email_domain}"
 
         now = datetime.now()
-        expires_at = now + timedelta(hours=1)  # 1小時後過期
+        expires_at = now + timedelta(seconds=self._get_email_ttl_seconds())
 
         return Email(
             token=token,

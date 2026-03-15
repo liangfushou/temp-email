@@ -193,7 +193,7 @@
           "step4_desc": "JavaScript Worker 拦截邮件并执行以下操作：<br>• 解析邮件内容（纯文本 + HTML）<br>• 提取发件人、收件人、主题、时间戳<br>• 生成唯一的邮件 ID（基于内容哈希）",
           "step4_detail": "<strong>Worker 文件：</strong> workers/email-handler.js",
           "step5_title": "存储到 Workers KV",
-          "step5_desc": "将邮件数据存储到 Cloudflare Workers KV（键值数据库）<br>• Key 格式：<code>mail:{邮箱地址}:{时间戳}</code><br>• 自动设置 1 小时过期时间（TTL=3600 秒）<br>• 维护每个邮箱的邮件索引列表（最多 50 封）",
+          "step5_desc": "将邮件数据存储到 Cloudflare Workers KV（键值数据库）<br>• Key 格式：<code>mail:{邮箱地址}:{时间戳}</code><br>• 自动设置过期时间（TTL 跟随 EMAIL_TTL 配置，默认 3600 秒）<br>• 维护每个邮箱的邮件索引列表（最多 50 封）",
           "step5_detail": "<strong>示例 Key：</strong> mail:test@example.com:1704096000000",
           "step6_title": "FastAPI 后端读取",
           "step6_desc": "Python 后端通过 Cloudflare KV API 读取数据：<br>• 使用 Account ID + Namespace ID + API Token 认证<br>• 调用 Cloudflare REST API 获取邮件<br>• 返回 JSON 格式的邮件数据给前端",

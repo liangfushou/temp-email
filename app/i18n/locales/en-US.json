@@ -193,7 +193,7 @@
           "step4_desc": "JavaScript Worker intercepts the email and performs the following operations:<br>• Parses email content (plain text + HTML)<br>• Extracts sender, recipient, subject, timestamp<br>• Generates unique email ID (based on content hash)",
           "step4_detail": "<strong>Worker File:</strong> workers/email-handler.js",
           "step5_title": "Store to Workers KV",
-          "step5_desc": "Store email data to Cloudflare Workers KV (key-value database)<br>• Key format: <code>mail:{email address}:{timestamp}</code><br>• Automatically sets 1-hour expiration (TTL=3600 seconds)<br>• Maintains mail index list for each mailbox (max 50 emails)",
+          "step5_desc": "Store email data to Cloudflare Workers KV (key-value database)<br>• Key format: <code>mail:{email address}:{timestamp}</code><br>• Automatically sets expiration using EMAIL_TTL (default 3600 seconds)<br>• Maintains mail index list for each mailbox (max 50 emails)",
           "step5_detail": "<strong>Example Key:</strong> mail:test@example.com:1704096000000",
           "step6_title": "FastAPI Backend Reads",
           "step6_desc": "Python backend reads data through Cloudflare KV API:<br>• Uses Account ID + Namespace ID + API Token for authentication<br>• Calls Cloudflare REST API to retrieve emails<br>• Returns JSON-formatted email data to frontend",

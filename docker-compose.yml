@@ -38,6 +38,7 @@ services:
       - PORT=1234
       - HOST=0.0.0.0
       - RELOAD=false
+      - EMAIL_TTL=${EMAIL_TTL:-3600}
 
       # Redis 配置（高流量支持）
       - REDIS_URL=redis://redis:6379/0
@@ -54,15 +55,16 @@ services:
 
       # Cloudflare Workers KV 配置
       # ⚠️ 请填写你的 Cloudflare 凭据
-      - USE_CLOUDFLARE_KV=false
+      - USE_CLOUDFLARE_KV=${USE_CLOUDFLARE_KV:-false}
       - CF_ACCOUNT_ID=${CF_ACCOUNT_ID:-}
       - CF_KV_NAMESPACE_ID=${CF_KV_NAMESPACE_ID:-}
       - CF_API_TOKEN=${CF_API_TOKEN:-}
       - CF_KV_DOMAINS=${CF_KV_DOMAINS:-}
 
       # 域名配置
-      - ENABLE_CUSTOM_DOMAINS=${ENABLE_CUSTOM_DOMAINS:-false}
+      - ENABLE_CUSTOM_DOMAINS=${ENABLE_CUSTOM_DOMAINS:-true}
       - CUSTOM_DOMAINS=${CUSTOM_DOMAINS:-[]}
+      - DEFAULT_DOMAINS=${DEFAULT_DOMAINS:-[]}
       - ENABLE_BUILTIN_DOMAINS=${ENABLE_BUILTIN_DOMAINS:-true}
 
       # LLM 验证码提取
@@ -78,6 +80,7 @@ services:
 
       # CORS 配置
       - CORS_ORIGINS=${CORS_ORIGINS:-["*"]}
+      - DEBUG_EMAIL_FETCH=${DEBUG_EMAIL_FETCH:-false}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:1234/api/health')"]

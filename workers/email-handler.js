@@ -15,6 +15,7 @@ export default {
   async email(message, env, ctx) {
     try {
       console.log(`[Email Worker] Received email to: ${message.to}`);
+      const emailTtlSeconds = getEmailTtlSeconds(env);
 
       // 提取郵件基本信息
       const from = message.from;
@@ -49,7 +50,7 @@ export default {
         kvKey,
         JSON.stringify(emailData),
         {
-          expirationTtl: 3600, // 1 小時後過期
+          expirationTtl: emailTtlSeconds,
           metadata: {
             email: to,
             from: from,
@@ -60,7 +61,7 @@ export default {
       );
 
       // 更新郵箱的郵件索引列表
-      await updateMailIndex(env.EMAIL_STORAGE, to, kvKey, emailData);
+      await updateMailIndex(env.EMAIL_STORAGE, to, kvKey, emailData, emailTtlSeconds);
 
       console.log(`[Email Worker] Stored email with key: ${kvKey}`);
 
@@ -73,6 +74,17 @@ export default {
     }
   }
 };
+
+function getEmailTtlSeconds(env) {
+  const rawValue = env.EMAIL_TTL;
+  const parsedValue = parseInt(rawValue, 10);
+
+  if (Number.isFinite(parsedValue) && parsedValue > 0) {
+    return parsedValue;
+  }
+
+  return 3600;
+}
 
 /**
  * 將 ReadableStream 轉換為 ArrayBuffer
@@ -325,7 +337,7 @@ function simpleHash(str) {
  * 更新郵箱的郵件索引
  * 維護每個郵箱地址的郵件列表
  */
-async function updateMailIndex(kv, emailAddress, mailKey, emailData) {
+async function updateMailIndex(kv, emailAddress, mailKey, emailData, ttlSeconds) {
   const indexKey = `index:${emailAddress}`;
 
   try {
@@ -356,7 +368,7 @@ async function updateMailIndex(kv, emailAddress, mailKey, emailData) {
         lastUpdate: new Date().toISOString()
       }),
       {
-        expirationTtl: 3600 // 1 小時後過期
+        expirationTtl: ttlSeconds
       }
     );
   } catch (error) {

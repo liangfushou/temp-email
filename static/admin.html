@@ -2009,7 +2009,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                         <div class="step-description">
                             将邮件数据存储到 Cloudflare Workers KV（键值数据库）<br>
                             • Key 格式：<code>mail:{邮箱地址}:{时间戳}</code><br>
-                            • 自动设置 1 小时过期时间（TTL=3600 秒）<br>
+                            • 自动设置过期时间（TTL 跟随 EMAIL_TTL 配置，默认 3600 秒）<br>
                             • 维护每个邮箱的邮件索引列表（最多 50 封）
                         </div>
                         <div class="step-detail">
