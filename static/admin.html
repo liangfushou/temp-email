@@ -371,6 +371,194 @@
             color: var(--primary);
         }
 
+        .mailbox-toolbar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .mailbox-toolbar .form-input,
+        .mailbox-toolbar .btn {
+            min-height: 42px;
+        }
+
+        .mailbox-toolbar .search-input {
+            flex: 1 1 320px;
+        }
+
+        .mailbox-summary {
+            font-size: 13px;
+            color: var(--gray-600);
+            margin-bottom: 12px;
+        }
+
+        .mailbox-table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--gray-200);
+            border-radius: 10px;
+        }
+
+        .mailbox-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        .mailbox-table th,
+        .mailbox-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--gray-200);
+            font-size: 13px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .mailbox-table th {
+            background: var(--gray-50);
+            color: var(--gray-700);
+            font-weight: 700;
+        }
+
+        .mailbox-table tbody tr:hover {
+            background: #fafbff;
+        }
+
+        .mailbox-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .mailbox-email {
+            font-weight: 600;
+            color: var(--gray-900);
+            word-break: break-all;
+        }
+
+        .mailbox-token {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--gray-600);
+            word-break: break-all;
+        }
+
+        .mailbox-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .mailbox-mini-btn {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .mailbox-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .mailbox-empty {
+            padding: 24px;
+            text-align: center;
+            color: var(--gray-500);
+            border: 1px dashed var(--gray-300);
+            border-radius: 10px;
+            background: var(--gray-50);
+        }
+
+        .mailbox-detail-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .mailbox-detail-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--gray-900);
+            word-break: break-all;
+        }
+
+        .mailbox-mail-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .mailbox-mail-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 10px;
+            padding: 16px;
+            background: #fcfcff;
+        }
+
+        .mailbox-mail-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 8px 16px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: var(--gray-700);
+        }
+
+        .mailbox-mail-subject {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .mailbox-mail-content {
+            margin: 0;
+            padding: 12px;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--gray-800);
+            max-height: 280px;
+            overflow: auto;
+        }
+
+        .mailbox-links {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--gray-200);
+        }
+
+        .mailbox-links-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--gray-600);
+            margin-bottom: 8px;
+        }
+
+        .mailbox-link-list {
+            display: grid;
+            gap: 6px;
+        }
+
+        .mailbox-link-list a {
+            color: var(--primary);
+            text-decoration: none;
+            word-break: break-all;
+            font-size: 13px;
+        }
+
+        .mailbox-link-list a:hover {
+            text-decoration: underline;
+        }
+
         .loading {
             display: inline-block;
             width: 16px;
@@ -1546,6 +1734,14 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" data-section="mailbox">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span>邮箱查询</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" data-section="llm">
                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
@@ -1752,6 +1948,82 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                                     <label class="form-label" for="enableBuiltinDomains" style="margin: 0;" data-i18n="pages.admin.dashboard.sections.domains.enable_builtin">启用内置域名</label>
                                 </div>
                                 <div class="form-hint" style="margin-left: 28px;" data-i18n="pages.admin.dashboard.sections.domains.builtin_domains_hint">20 个预设的临时邮箱域名（自动使用外部 API）<br><span style="color: var(--warning);">⚠️ 注意：这些内置域名可能被目标服务封锁 (seems to be blocked by target domain)</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-content" id="section-mailbox">
+                    <div class="card">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <h2 class="card-title">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                                <span>当前邮箱查询</span>
+                            </h2>
+                            <button class="btn btn-secondary" id="mailboxRefreshBtn">刷新列表</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info show">
+                                这里只显示当前服务进程内仍存活的邮箱，支持按邮箱地址、token、域名分页搜索。若服务重启，旧 token 不会自动从内存恢复。
+                            </div>
+                            <div id="mailboxMessage" class="alert"></div>
+                            <div class="mailbox-toolbar">
+                                <input type="text" id="mailboxSearchInput" class="form-input search-input" placeholder="搜索邮箱地址 / token / 域名">
+                                <select id="mailboxPageSize" class="form-input" style="max-width: 120px;">
+                                    <option value="10">10 / 页</option>
+                                    <option value="20" selected>20 / 页</option>
+                                    <option value="50">50 / 页</option>
+                                </select>
+                                <button class="btn btn-primary" id="mailboxSearchBtn">查询</button>
+                            </div>
+                            <div class="mailbox-summary" id="mailboxSummary">点击「查询」加载当前活跃邮箱列表。</div>
+                            <div class="mailbox-table-wrapper">
+                                <table class="mailbox-table">
+                                    <thead>
+                                        <tr>
+                                            <th>邮箱</th>
+                                            <th>Token</th>
+                                            <th>域名</th>
+                                            <th>剩余有效期</th>
+                                            <th>邮件数</th>
+                                            <th>来源</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="mailboxTableBody">
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; color: var(--gray-500);">暂无数据</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mailbox-empty" id="mailboxEmpty" style="display: none; margin-top: 16px;">没有匹配到当前活跃邮箱。</div>
+                            <div class="mailbox-pagination">
+                                <button class="btn btn-ghost" id="mailboxPrevBtn">上一页</button>
+                                <span id="mailboxPageInfo">第 0 / 0 页</span>
+                                <button class="btn btn-ghost" id="mailboxNextBtn">下一页</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-6 4h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                </svg>
+                                <span>邮件详情</span>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="mailbox-detail-header" id="mailboxDetailHeader">
+                                <div class="mailbox-detail-title">尚未选择邮箱</div>
+                                <div class="form-hint">点击上方「查看邮件」加载该邮箱的最新邮件。</div>
+                            </div>
+                            <div class="mailbox-mail-list" id="mailboxMailList">
+                                <div class="mailbox-empty">这里会显示所选邮箱的最新邮件内容与正文里的链接。</div>
                             </div>
                         </div>
                     </div>
@@ -2074,6 +2346,70 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
         const configContainer = document.getElementById('configContainer');
         const loginMessage = document.getElementById('loginMessage');
         const message = document.getElementById('message');
+        const mailboxMessage = document.getElementById('mailboxMessage');
+        const mailboxSearchInput = document.getElementById('mailboxSearchInput');
+        const mailboxPageSize = document.getElementById('mailboxPageSize');
+        const mailboxSummary = document.getElementById('mailboxSummary');
+        const mailboxTableBody = document.getElementById('mailboxTableBody');
+        const mailboxEmpty = document.getElementById('mailboxEmpty');
+        const mailboxPageInfo = document.getElementById('mailboxPageInfo');
+        const mailboxPrevBtn = document.getElementById('mailboxPrevBtn');
+        const mailboxNextBtn = document.getElementById('mailboxNextBtn');
+        const mailboxDetailHeader = document.getElementById('mailboxDetailHeader');
+        const mailboxMailList = document.getElementById('mailboxMailList');
+        const mailboxState = {
+            page: 1,
+            pageSize: 20,
+            totalPages: 0,
+            total: 0,
+            query: '',
+            loaded: false
+        };
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatMailboxDate(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleString('zh-CN', { hour12: false });
+        }
+
+        function formatMailboxTtl(seconds) {
+            const ttl = Number(seconds || 0);
+            if (ttl <= 0) return '已过期';
+            if (ttl < 60) return `${ttl}s`;
+            if (ttl < 3600) return `${Math.floor(ttl / 60)}m`;
+            const hours = Math.floor(ttl / 3600);
+            const minutes = Math.floor((ttl % 3600) / 60);
+            return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+        }
+
+        function extractUrlsFromText(text) {
+            const matches = String(text || '').match(/https?:\/\/[^\s<>"']+/g) || [];
+            return [...new Set(matches)];
+        }
+
+        async function fetchWithAdminAuth(url, options = {}) {
+            const token = localStorage.getItem('admin_token');
+            if (!token) {
+                throw new Error('未登录');
+            }
+
+            const headers = {
+                ...(options.headers || {}),
+                'Authorization': `Bearer ${token}`
+            };
+
+            return fetch(url, { ...options, headers });
+        }
 
         // 导航切换
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -2094,6 +2430,10 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 // 显示对应区块
                 document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
                 document.getElementById('section-' + section).classList.add('active');
+
+                if (section === 'mailbox' && !mailboxState.loaded) {
+                    loadMailboxPage(1);
+                }
 
                 // 在移動端點擊導航後自動關閉側邊欄
                 if (window.innerWidth <= 768) {
@@ -2167,6 +2507,180 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             }, displayTime);
         }
 
+        async function copyMailboxToken(token) {
+            try {
+                await navigator.clipboard.writeText(token);
+                showMessage(mailboxMessage, '✅ Token 已复制', 'success');
+            } catch (error) {
+                showMessage(mailboxMessage, '❌ 复制失败: ' + error.message, 'error');
+            }
+        }
+
+        function renderMailboxTable(data) {
+            const items = Array.isArray(data.items) ? data.items : [];
+
+            mailboxState.page = data.page || 1;
+            mailboxState.pageSize = data.pageSize || mailboxState.pageSize;
+            mailboxState.totalPages = data.totalPages || 0;
+            mailboxState.total = data.total || 0;
+            mailboxState.loaded = true;
+
+            mailboxSummary.textContent = `共 ${mailboxState.total} 个当前活跃邮箱，数据源：${data.source || 'memory'}。`;
+            mailboxPageInfo.textContent = `第 ${mailboxState.page} / ${mailboxState.totalPages || 1} 页`;
+            mailboxPrevBtn.disabled = !data.hasPrev;
+            mailboxNextBtn.disabled = !data.hasNext;
+
+            if (items.length === 0) {
+                mailboxTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--gray-500);">暂无匹配邮箱</td>
+                    </tr>
+                `;
+                mailboxEmpty.style.display = mailboxState.total === 0 ? 'block' : 'none';
+                return;
+            }
+
+            mailboxEmpty.style.display = 'none';
+            mailboxTableBody.innerHTML = items.map(item => {
+                const sourceLabel = item.useCloudflareKV ? 'Cloudflare KV' : 'External API';
+                return `
+                    <tr>
+                        <td>
+                            <div class="mailbox-email">${escapeHtml(item.email)}</div>
+                            <div class="form-hint">创建于 ${escapeHtml(formatMailboxDate(item.createdAt))}</div>
+                        </td>
+                        <td>
+                            <div class="mailbox-token">${escapeHtml(item.token)}</div>
+                        </td>
+                        <td>${escapeHtml(item.domain || '-')}</td>
+                        <td>${escapeHtml(formatMailboxTtl(item.ttlSeconds))}</td>
+                        <td>${escapeHtml(String(item.mailCount || 0))}</td>
+                        <td>${escapeHtml(sourceLabel)}</td>
+                        <td>
+                            <div class="mailbox-actions">
+                                <button class="btn btn-primary mailbox-mini-btn" onclick="inspectMailbox('${escapeHtml(item.token)}', '${escapeHtml(item.email)}')">查看邮件</button>
+                                <button class="btn btn-ghost mailbox-mini-btn" onclick="copyMailboxToken('${escapeHtml(item.token)}')">复制 Token</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function loadMailboxPage(page = 1) {
+            try {
+                mailboxState.query = mailboxSearchInput.value.trim();
+                mailboxState.pageSize = parseInt(mailboxPageSize.value, 10) || 20;
+
+                mailboxTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--gray-500);">
+                            <span class="loading" style="border-color: rgba(79, 70, 229, 0.2); border-top-color: var(--primary);"></span>
+                            正在加载...
+                        </td>
+                    </tr>
+                `;
+                mailboxSummary.textContent = '正在查询当前活跃邮箱...';
+                mailboxEmpty.style.display = 'none';
+
+                const params = new URLSearchParams({
+                    page: String(page),
+                    page_size: String(mailboxState.pageSize)
+                });
+                if (mailboxState.query) {
+                    params.set('q', mailboxState.query);
+                }
+
+                const response = await fetchWithAdminAuth(`/admin/mailboxes?${params.toString()}`);
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail || data.message || '加载邮箱列表失败');
+                }
+
+                renderMailboxTable(data.data);
+            } catch (error) {
+                mailboxState.loaded = false;
+                mailboxTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--danger);">${escapeHtml(error.message)}</td>
+                    </tr>
+                `;
+                mailboxSummary.textContent = '加载失败';
+                showMessage(mailboxMessage, '❌ ' + error.message, 'error');
+            }
+        }
+
+        function renderMailboxMailList(email, token, mails, total) {
+            mailboxDetailHeader.innerHTML = `
+                <div>
+                    <div class="mailbox-detail-title">${escapeHtml(email)}</div>
+                    <div class="form-hint">Token: <span class="mailbox-token">${escapeHtml(token)}</span></div>
+                </div>
+                <div class="form-hint">已加载 ${mails.length} / ${total} 封邮件</div>
+            `;
+
+            if (!mails.length) {
+                mailboxMailList.innerHTML = '<div class="mailbox-empty">当前没有邮件。</div>';
+                return;
+            }
+
+            mailboxMailList.innerHTML = mails.map(mail => {
+                const content = String(mail.content || '').trim();
+                const urls = extractUrlsFromText(content);
+                const preview = content || '(无正文)';
+                const urlsHtml = urls.length > 0
+                    ? `
+                        <div class="mailbox-links">
+                            <div class="mailbox-links-title">正文中提取到的链接</div>
+                            <div class="mailbox-link-list">
+                                ${urls.map(url => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`).join('')}
+                            </div>
+                        </div>
+                    `
+                    : '';
+
+                return `
+                    <div class="mailbox-mail-card">
+                        <div class="mailbox-mail-subject">${escapeHtml(mail.subject || '(No Subject)')}</div>
+                        <div class="mailbox-mail-meta">
+                            <div><strong>发件人：</strong>${escapeHtml(mail.from || '-')}</div>
+                            <div><strong>收件人：</strong>${escapeHtml(mail.to || email)}</div>
+                            <div><strong>接收时间：</strong>${escapeHtml(formatMailboxDate(mail.receivedAt))}</div>
+                            <div><strong>状态：</strong>${mail.read ? '已读' : '未读'}</div>
+                        </div>
+                        <pre class="mailbox-mail-content">${escapeHtml(preview)}</pre>
+                        ${urlsHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function inspectMailbox(token, email) {
+            try {
+                mailboxDetailHeader.innerHTML = `
+                    <div>
+                        <div class="mailbox-detail-title">${escapeHtml(email)}</div>
+                        <div class="form-hint">Token: <span class="mailbox-token">${escapeHtml(token)}</span></div>
+                    </div>
+                    <div class="form-hint">正在加载最新邮件...</div>
+                `;
+                mailboxMailList.innerHTML = '<div class="mailbox-empty">正在从当前邮箱拉取最新邮件...</div>';
+
+                const response = await fetch(`/api/email/${encodeURIComponent(token)}/mails?limit=20&offset=0`);
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail || data.message || '加载邮件失败');
+                }
+
+                renderMailboxMailList(email, token, data.data?.mails || [], data.data?.total || 0);
+            } catch (error) {
+                mailboxMailList.innerHTML = `<div class="mailbox-empty" style="color: var(--danger);">加载邮件失败：${escapeHtml(error.message)}</div>`;
+                showMessage(mailboxMessage, '❌ ' + error.message, 'error');
+            }
+        }
+
         // 检查 JWT
         async function checkSession() {
             const token = localStorage.getItem('admin_token');
@@ -2184,6 +2698,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
 
                 if (data.authenticated) {
                     await loadConfig();
+                    loadMailboxPage(1).catch(error => console.error('加载邮箱列表失败:', error));
                     loginContainer.style.display = 'none';
                     configContainer.style.display = 'block';
                     return true;
@@ -2227,6 +2742,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                     const successMsg = window.t ? window.t('pages.admin.login.messages.success') : '登录成功！';
                     showMessage(loginMessage, successMsg, 'success');
                     await loadConfig();
+                    loadMailboxPage(1).catch(error => console.error('加载邮箱列表失败:', error));
                     loginContainer.style.display = 'none';
                     configContainer.style.display = 'block';
                 } else {
@@ -2680,6 +3196,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 loginContainer.style.display = 'flex';
                 configContainer.style.display = 'none';
                 loginForm.reset();
+                mailboxState.loaded = false;
                 showMessage(loginMessage, '✅ 已登出', 'success');
             } catch (error) {
                 // 即使请求失败，也清除本地存储
@@ -2687,7 +3204,28 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 loginContainer.style.display = 'flex';
                 configContainer.style.display = 'none';
                 loginForm.reset();
+                mailboxState.loaded = false;
                 showMessage(loginMessage, '✅ 已登出', 'success');
+            }
+        });
+
+        document.getElementById('mailboxSearchBtn').addEventListener('click', () => loadMailboxPage(1));
+        document.getElementById('mailboxRefreshBtn').addEventListener('click', () => loadMailboxPage(mailboxState.page || 1));
+        mailboxPrevBtn.addEventListener('click', () => {
+            if (mailboxState.page > 1) {
+                loadMailboxPage(mailboxState.page - 1);
+            }
+        });
+        mailboxNextBtn.addEventListener('click', () => {
+            if (mailboxState.page < mailboxState.totalPages) {
+                loadMailboxPage(mailboxState.page + 1);
+            }
+        });
+        mailboxPageSize.addEventListener('change', () => loadMailboxPage(1));
+        mailboxSearchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                loadMailboxPage(1);
             }
         });
 

@@ -12,12 +12,13 @@ from pydantic import BaseModel
 import hashlib
 import secrets
 import asyncio
-from app.config import settings
+from app.config import settings, should_use_cloudflare_kv
 from app.models import EnvConfigRequest, EnvConfigResponse
 from app.services.env_service import env_service
 from app.services.log_service import log_service, LogLevel, LogType
 from app.services.auth_service import auth_service
 from app.services.cloudflare_helper import cloudflare_helper
+from app.services.storage_service import storage_service
 import os
 import re
 
@@ -282,6 +283,82 @@ async def whoami(request: Request, current_user: str = Depends(get_current_user)
     ip = request.client.host if request.client else "unknown"
     ua = request.headers.get("user-agent", "")
     return {"success": True, "user": current_user, "ip": ip, "user_agent": ua}
+
+
+def _serialize_admin_mailbox(email) -> dict:
+    """格式化管理后台邮箱列表项。"""
+    now = datetime.now()
+    ttl_seconds = max(int((email.expires_at - now).total_seconds()), 0)
+
+    return {
+        "token": email.token,
+        "email": email.address,
+        "address": email.address,
+        "prefix": email.prefix,
+        "domain": email.domain,
+        "createdAt": email.created_at.isoformat(),
+        "expiresAt": email.expires_at.isoformat(),
+        "createdAtMs": int(email.created_at.timestamp() * 1000),
+        "expiresAtMs": int(email.expires_at.timestamp() * 1000),
+        "ttlSeconds": ttl_seconds,
+        "mailCount": email.mail_count,
+        "expired": ttl_seconds == 0,
+        "useCloudflareKV": should_use_cloudflare_kv(email.address),
+    }
+
+
+@router.get("/mailboxes")
+async def list_active_mailboxes(
+    q: Optional[str] = Query(None, description="按邮箱/token/域名搜索"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: str = Depends(get_current_user),
+):
+    """
+    分页查询当前进程内的活跃邮箱。
+
+    注意：
+    - 数据源为应用内存
+    - 服务重启后，旧 token 不会自动恢复
+    """
+    del current_user
+
+    emails = sorted(
+        storage_service.get_all_emails(),
+        key=lambda item: item.created_at,
+        reverse=True,
+    )
+
+    keyword = (q or "").strip().lower()
+    if keyword:
+        emails = [
+            email for email in emails
+            if keyword in email.address.lower()
+            or keyword in email.token.lower()
+            or keyword in email.domain.lower()
+            or keyword in email.prefix.lower()
+        ]
+
+    total = len(emails)
+    total_pages = (total + page_size - 1) // page_size if total else 0
+    start = (page - 1) * page_size
+    items = emails[start : start + page_size]
+
+    return {
+        "success": True,
+        "data": {
+            "source": "memory",
+            "query": keyword,
+            "total": total,
+            "page": page,
+            "pageSize": page_size,
+            "totalPages": total_pages,
+            "hasPrev": page > 1,
+            "hasNext": page < total_pages,
+            "items": [_serialize_admin_mailbox(email) for email in items],
+            "note": "仅显示当前进程内仍存活的邮箱；如服务重启，旧 token 不会自动恢复。",
+        },
+    }
 
 
 @router.get("/debug/config")
