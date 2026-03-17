@@ -44,6 +44,7 @@ const emailsState = {
     apiNotificationsEnabled: false, // Control API popup notifications (default: off)
     mailDetailsCache: {} // Cache for mail details and codes: {mailId: {subject, from, content, receivedAt, codes}}
 };
+let appInitialized = false;
 
 // API Base URL
 const API_BASE = window.location.origin;
@@ -2048,6 +2049,56 @@ function initApiNotifications() {
     }
 }
 
+async function loadActiveEmails() {
+    try {
+        const response = await fetch(`${API_BASE}/api/email/active`);
+        const data = await response.json();
+
+        const activeEmails = Array.isArray(data?.data?.emails) ? data.data.emails : [];
+        if (!data.success || activeEmails.length === 0) {
+            return;
+        }
+
+        const existingTokens = new Set(emailsState.emails.map(email => email.token));
+        let restoredCount = 0;
+
+        for (const activeEmail of activeEmails) {
+            if (!activeEmail?.token || !activeEmail?.email || existingTokens.has(activeEmail.token)) {
+                continue;
+            }
+
+            const expiresMs = typeof activeEmail.expiresAtMs === 'number'
+                ? activeEmail.expiresAtMs
+                : Date.parse(String(activeEmail.expiresAt).replace(/Z?$/, 'Z'));
+
+            const emailData = {
+                token: activeEmail.token,
+                email: activeEmail.email,
+                expiresAt: new Date(expiresMs),
+                webUrl: activeEmail.webUrl || null,
+                useCloudflareKV: activeEmail.useCloudflareKV || false,
+                mails: [],
+                mailCount: activeEmail.mailCount || 0,
+                isExpanded: true
+            };
+
+            emailsState.emails.push(emailData);
+            existingTokens.add(emailData.token);
+            startExpiresCountdown(emailData.token, emailData.expiresAt);
+            restoredCount += 1;
+        }
+
+        if (restoredCount > 0) {
+            renderEmailList();
+            updateStats();
+            await refreshAllEmails();
+            showToast(`已恢复 ${restoredCount} 个邮箱`, 'info');
+        }
+    } catch (error) {
+        console.error('[App] Failed to restore active emails:', error);
+    }
+}
+
 // Initialize
 console.log('Temporary Email Service - Multi-Email Support Ready!');
 console.log('API Documentation: ' + API_BASE + '/docs');
@@ -2066,7 +2117,12 @@ function closeCodesInline(mailId) {
 }
 
 // Initialize app after i18n is loaded
-function initializeApp() {
+async function initializeApp() {
+    if (appInitialized) {
+        return;
+    }
+    appInitialized = true;
+
     console.log('[App] Initializing after i18n loaded');
 
     // Update any existing API notifications that were created before i18n loaded
@@ -2088,6 +2144,9 @@ function initializeApp() {
 
     // Initialize custom prefix toggle
     initCustomPrefixToggle();
+
+    // Restore active mailboxes kept by the backend process after a page refresh
+    await loadActiveEmails();
 }
 
 // Update existing API notifications with proper translations

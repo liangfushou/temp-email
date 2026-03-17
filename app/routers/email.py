@@ -50,6 +50,8 @@ def _serialize_active_email(email) -> Dict[str, Any]:
         "domain": email.domain,
         "createdAt": email.created_at.isoformat(),
         "expiresAt": email.expires_at.isoformat(),
+        "createdAtMs": int(email.created_at.timestamp() * 1000),
+        "expiresAtMs": int(email.expires_at.timestamp() * 1000),
         "ttlSeconds": ttl_seconds,
         "mailCount": email.mail_count,
         "useCloudflareKV": should_use_cloudflare_kv(email.address),
