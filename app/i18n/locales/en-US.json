@@ -125,7 +125,7 @@
           },
           "step5": {
             "title": "Configure Email Routing",
-            "description": "Set up email routing in Cloudflare Dashboard:\n\n1. Select your domain\n   ⚠️ If your domain hasn't been added to Cloudflare yet, please go to Cloudflare Dashboard to add the domain and complete DNS configuration first\n2. Go to Email → Email Routing\n3. Click \"Enable Email Routing\"\n4. After enabling, click the \"Routing rules\" tab\n5. Find the Catch-All rule, click \"Edit\"\n6. In the \"Action\" dropdown, select \"Send to Worker\"\n7. Select Worker: temp-email-worker\n8. Click Save",
+            "description": "Set up email routing in Cloudflare Dashboard:\n\n1. Select your domain\n   ⚠️ If your domain hasn't been added to Cloudflare yet, please go to Cloudflare Dashboard to add the domain and complete DNS configuration first\n2. Go to Email → Email Routing\n3. Click \"Enable Email Routing\"\n4. After enabling, click the \"Routing rules\" tab\n5. Find the Catch-All rule, click \"Edit\"\n6. In the \"Action\" dropdown, select \"Send to Worker\"\n7. Select Worker: mailapi\n8. Click Save",
             "hint": "The Catch-All rule will forward all emails sent to this domain to the Worker for processing"
           },
           "step_label": "Step",

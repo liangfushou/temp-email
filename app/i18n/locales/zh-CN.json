@@ -125,7 +125,7 @@
           },
           "step5": {
             "title": "配置 Email Routing",
-            "description": "在 Cloudflare Dashboard 中设置邮件路由:\n\n1. 选择您的域名\n   ⚠️ 如果您的域名尚未添加到 Cloudflare，请先前往 Cloudflare Dashboard 添加域名并完成 DNS 配置\n2. 进入 Email → Email Routing\n3. 点击「启用电子邮件路由」(Enable Email Routing)\n4. 启用后，点击「路由规则」(Routing rules) 选项卡\n5. 找到 Catch-All 规则，点击「编辑」(Edit)\n6. 在「操作」下拉菜单中选择「发送到 Worker」\n7. 选择 Worker: temp-email-worker\n8. 点击保存",
+            "description": "在 Cloudflare Dashboard 中设置邮件路由:\n\n1. 选择您的域名\n   ⚠️ 如果您的域名尚未添加到 Cloudflare，请先前往 Cloudflare Dashboard 添加域名并完成 DNS 配置\n2. 进入 Email → Email Routing\n3. 点击「启用电子邮件路由」(Enable Email Routing)\n4. 启用后，点击「路由规则」(Routing rules) 选项卡\n5. 找到 Catch-All 规则，点击「编辑」(Edit)\n6. 在「操作」下拉菜单中选择「发送到 Worker」\n7. 选择 Worker: mailapi\n8. 点击保存",
             "hint": "Catch-All 规则会将所有发送到该域名的邮件转发给 Worker 处理"
           },
           "step_label": "步骤",
